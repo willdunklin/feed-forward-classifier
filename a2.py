@@ -28,7 +28,6 @@
 #       the derivative of the activation of z[i]:
 #           delta[i] = (W[j]T * delta[j]) o s'(z[i])
 #                                         ^- elem-wise multiplication
-
 import numpy as np
 
 # [-1, +1] -> boolean
@@ -38,12 +37,6 @@ def sign(x):
         return -1
     return 1
 
-# change the +/-1 label to a vector representation
-def label_vector(x):
-    if x == -1:
-        return np.array([1, 0])
-    return np.array([0, 1])
-
 # tanh(z/2)
 def sigmoid(z):
     return np.tanh(z * 0.5)
@@ -52,13 +45,6 @@ def sigmoid(z):
 def sigmoid_prime(z):
     sig_z = sigmoid(z)
     return (1 - (sig_z * sig_z))/2
-
-# sigmoid_o => [0, 1]
-def sigmoid_o(z):
-    return (sigmoid(z) + 1) * 0.5
-
-def sigmoid_o_prime(z):
-    return sigmoid_prime(z) * 0.5
 
 
 # supply data/label paths
@@ -75,101 +61,52 @@ def read_data(data):
     return np.array(points)
 
 
-def propagate(W, y, z, k):
-    for j in range(1, k + 1):
-        # vector of dot products b/w weights and respective inputs
-        z[j] = np.matmul(W[j], y[j-1])
-        # run the above vector through the activation function
-        if j != k:
-            # add bias if not output
-            y[j] = np.concatenate((sigmoid(z[j]), [1]))
-        else:
-            # no bias if output
-            y[j] = sigmoid(z[j])
-
-
-# data
-# read training data
-xs, ys = read_data('train/data.txt'), read_data('train/labels.txt')
-# read testing data
-test_xs, test_ys = read_data('test/data.txt'), read_data('test/labels.txt')
-
-# maximum value of training data
-max_val = 1 / max(abs(xs.max()), abs(xs.min()))
-
-
-# model setup
-# 1000 inputs, 10 hidden nodes, 2 output
-layer_shape = [1000, 10, 1]
-# number of layers
-k = len(layer_shape) - 1
-
 # tensors for tracking matrices and vectors
-# weight, gradient matrices
-W = [np.array([])] * (k + 1)
-# populate each layer of calculations so they can be indexed 
-for i in range(1, k + 1):
-    # create weight matrix
-    # add room for a bias dimension in the input vector        -v
-    weights = np.random.rand(layer_shape[i], layer_shape[i - 1] + 1)
+def create_tensors(layers):
+    # weight, gradient matrices
+    W = [np.array([])] * len(layers)
 
-    # adjust weights to be centered around zero and normalized by input size
-    weights = (weights - 0.5)/(layer_shape[i])
-    W[i] = weights
-# initialize gradient to zero
-grad = [w * 0 for w in W]
+    # populate each layer of calculations so they can be indexed 
+    for i in range(1, len(layers)):
+        # create weight matrix
+        # add room for a bias dimension in the input vector        -v
+        weights = np.random.rand(layers[i], layers[i - 1] + 1)
 
-# z, y, delta vectors
-z = [np.array([])] * (k + 1)
-y = [np.array([])] * (k + 1)
-delta = [np.array([])] * (k + 1)
+        # adjust weights to be centered around zero and normalized by input size
+        weights = (weights - 0.5)/(layers[i])
+        W[i] = weights
 
-# learning rate set arbitrarily for now
-leanring_rate = 0.1
-batch_size = 1
+    # initialize gradient to zero
+    grad = [w * 0 for w in W]
+
+    # z, y, delta vectors
+    z = [np.array([])] * len(layers)
+    y = [np.array([])] * len(layers)
+    delta = [np.array([])] * len(layers)
+
+    return W, y, z, delta, grad
 
 
-# training
-# xs = np.concatenate((xs, test_xs))
-# ys = np.concatenate((ys, test_ys))
-# loop over all points
-correct = []
-xs = np.concatenate(([xs] * 8))
-ys = np.concatenate(([ys] * 8))
-
-for i, sample in enumerate(xs):
-    # set the target label
-    label = ys[i]
-
-    # the 0th layer's outputs is the sample
-    #   also normalize by multiplying by 1/max_value
-    y[0] = np.concatenate((sample * max_val, [1]))
-
-    # forward propagation
+# feed forward propagation
+def propagate(W, y, z, k):
     # look at layer j=[1..k]
-    for j in range(1, k + 1):
+    for j in range(1, k):
         # vector of dot products b/w weights and respective inputs
         z[j] = np.matmul(W[j], y[j-1])
         # run the above vector through the activation function
-        if j != k:
+        if j != k - 1:
             # add bias if not output
             y[j] = np.concatenate((sigmoid(z[j]), [1]))
         else:
             # no bias if output
             y[j] = sigmoid(z[j])
 
-    # output
-    # print(y[k], sign(y[k]), sign(label), label)
-    if sign(y[k]) == sign(label):
-        correct.append(1)
-    else:
-        correct.append(0)
-
-    # backpropagation
+# backpropagation
+def backprop(W, y, z, delta, grad, learning_rate, layers, batch_size=1):
     # go backwards j=[k-1..1]
-    for j in range(k, 0, -1):
-        # delta_k = partial(error)/partial(z_k)
-        if j == k:
+    for j in range(len(layers) - 1, 0, -1):
+        # delta_j = partial(error)/partial(z_j)
+        if j == len(layers) - 1:
             # base case for delta[k]
             # take the partial derivative of error w.r.t. z[j]
             delta[j] = (label - y[j]) * sigmoid_prime(z[j])
@@ -185,9 +122,9 @@ for i, sample in enumerate(xs):
 
         # creating a new matrix representing the gradient of error w.r.t. W[j]
         g = []
-        for r in range(layer_shape[j]):
+        for r in range(layers[j]):
             # multiple the value of delta[j] at each row by the input vector y[j-1]
-            row = (leanring_rate * delta[j][r]) * y[j-1]
+            row = (learning_rate * delta[j][r]) * y[j-1]
             g.append(row)
 
         # add sample's gradient to the batch gradient
@@ -198,11 +135,54 @@ for i, sample in enumerate(xs):
             W[j] = W[j] + grad[j]
             # reset the gradient after batch
             grad[j] = W[j] * 0
-        pass
-    pass
-    i += 1
 
-# print()
+
+## data
+# read training data
+xs, ys = read_data('train/data.txt'), read_data('train/labels.txt')
+# read testing data
+test_xs, test_ys = read_data('test/data.txt'), read_data('test/labels.txt')
+
+# xs = np.concatenate((xs, test_xs))
+# ys = np.concatenate((ys, test_ys))
+
+# maximum value of training data
+max_val = 1 / max(abs(xs.max()), abs(xs.min()))
+
+
+## model setup
+# layer shape: 1000 inputs, 10 hidden nodes, 2 output
+layers = [1000, 10, 1]
+W, z, y, delta, grad = create_tensors(layers)
+learning_rate = 0.1
+
+
+## training
+# concat points to train over multiple times
+xs = np.concatenate(([xs] * 8))
+ys = np.concatenate(([ys] * 8))
+
+# loop over all points
+correct = []
+for i, sample in enumerate(xs):
+    # set the target label
+    label = ys[i]
+
+    # the 0th layer's outputs is the sample
+    y[0] = np.concatenate((sample * max_val, [1]))
+
+    propagate(W, y, z, len(layers))
+
+    # output
+    # print(y[-1], sign(y[k]), sign(label), label)
+    if sign(y[-1]) == sign(label):
+        correct.append(1)
+    else:
+        correct.append(0)
+
+    # backpropagation
+    backprop(W, y, z, delta, grad, learning_rate, layers, batch_size=1)
+
 print('Training:')
 print(f'    #correct:               {sum(correct)}')
 print(f'    #trained:               {len(correct)}')
@@ -210,28 +190,19 @@ print(f'    %correct (full sample): {100*sum(correct)/len(correct)}%')
 amt = 1000
 print(f'    %correct (last {amt}):   {100*sum(correct[-amt:])/len(correct[-amt:])}%')
 
+
+## testing
 correct = []
 for i, sample in enumerate(test_xs):
     label = test_ys[i]
 
     # the 0th layer's outputs is the sample
-    #   also normalize by multiplying by 1/max_value
     y[0] = np.concatenate((sample * max_val, [1]))
 
-    # look at layer j=[1..k]
-    for j in range(1, k + 1):
-        # vector of dot products b/w weights and respective inputs
-        z[j] = np.matmul(W[j], y[j-1])
-        # run the above vector through the activation function
-        if j != k:
-            # add bias if not output
-            y[j] = np.concatenate((sigmoid(z[j]), [1]))
-        else:
-            # no bias if output
-            y[j] = sigmoid(z[j])
+    propagate(W, y, z, len(layers))
 
     # output
-    if sign(y[k]) == sign(label):
+    if sign(y[-1]) == sign(label):
         correct.append(1)
     else:
         correct.append(0)
