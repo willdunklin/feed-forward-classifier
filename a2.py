@@ -87,7 +87,7 @@ max_val = 1 / max(abs(xs.max()), abs(xs.min()))
 
 # model setup
 # 1000 inputs, 4 hidden nodes, 2 output
-layer_shape = [1000, 4, 2]
+layer_shape = [1, 1, 2]
 # number of layers
 k = len(layer_shape) - 1
 
@@ -113,7 +113,7 @@ delta = [np.array([])] * (k + 1)
 
 # learning rate set arbitrarily for now
 leanring_rate = 0.1
-batch_size = 2
+batch_size = 1
 
 correct = 0
 
@@ -123,9 +123,13 @@ i = 0
 while i < len(xs):
     index = i # np.random.randint(0, len(xs))
     # set the target label
-    sample = xs[index]
+    sample = xs[index][:layer_shape[0]]
     # vector of the form [1, 0] or [0, 1]
     label = label_vector(ys[index])
+
+    if sign(label) == 1:
+        i += 1
+        continue
 
     # the 0th layer's outputs is the sample
     #   also normalize by multiplying by 1/max_value
@@ -179,7 +183,7 @@ while i < len(xs):
 
         # correct the matrix by the gradient
         if i % batch_size == batch_size - 1:
-            W[j] = W[j] - grad[j]
+            W[j] = W[j] + grad[j]
             # reset the gradient after batch
             grad[j] = W[j] * 0
         pass
