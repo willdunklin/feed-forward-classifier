@@ -87,7 +87,7 @@ max_val = 1 / max(abs(xs.max()), abs(xs.min()))
 
 # model setup
 # 1000 inputs, 4 hidden nodes, 2 output
-layer_shape = [1, 1, 2]
+layer_shape = [1000, 10, 2]
 # number of layers
 k = len(layer_shape) - 1
 
@@ -115,21 +115,17 @@ delta = [np.array([])] * (k + 1)
 leanring_rate = 0.1
 batch_size = 1
 
-correct = 0
+correct = []
 
 # training
 # loop over all points
 i = 0
-while i < len(xs):
-    index = i # np.random.randint(0, len(xs))
+while i < 10 * len(xs):
+    index = np.random.randint(0, len(xs))
     # set the target label
     sample = xs[index][:layer_shape[0]]
     # vector of the form [1, 0] or [0, 1]
     label = label_vector(ys[index])
-
-    if sign(label) == 1:
-        i += 1
-        continue
 
     # the 0th layer's outputs is the sample
     #   also normalize by multiplying by 1/max_value
@@ -149,9 +145,11 @@ while i < len(xs):
             y[j] = sigmoid_o(z[j])
 
     # output
-    print(y[k], sign(y[k]), sign(label), label)
+    # print(y[k], sign(y[k]), sign(label), label)
     if sign(y[k]) == sign(label):
-        correct += 1
+        correct.append(1)
+    else:
+        correct.append(0)
 
     # backpropagation
     # go backwards j=[k-1..1]
@@ -190,4 +188,45 @@ while i < len(xs):
     pass
     i += 1
 
-print(correct, correct/i)
+# print()
+print('Training:')
+print(f'    #correct:               {sum(correct)}')
+print(f'    #trained:               {len(correct)}')
+print(f'    %correct (full sample): {sum(correct)/len(correct)}')
+amt = 2000
+print(f'    %correct (last {amt}):   {sum(correct[-amt:])/len(correct[-amt:])}')
+
+correct = []
+for i in range(len(test_xs)):
+    index = i
+    sample = test_xs[index][:layer_shape[0]]
+    # vector of the form [1, 0] (-1) or [0, 1] (+1)
+    label = label_vector(test_ys[index])
+
+    # the 0th layer's outputs is the sample
+    #   also normalize by multiplying by 1/max_value
+    y[0] = np.concatenate((sample * max_val, [1]))
+
+    # look at layer j=[1..k]
+    for j in range(1, k + 1):
+        # vector of dot products b/w weights and respective inputs
+        z[j] = np.matmul(W[j], y[j-1])
+        # run the above vector through the activation function
+        if j != k:
+            # add bias if not output
+            y[j] = np.concatenate((sigmoid(z[j]), [1]))
+        else:
+            # no bias if output
+            y[j] = sigmoid_o(z[j])
+
+    # output
+    if sign(y[k]) == sign(label):
+        correct.append(1)
+    else:
+        correct.append(0)
+
+print()
+print('Testing:')
+print(f'    #correct:               {sum(correct)}')
+print(f'    #tested:                {len(correct)}')
+print(f'    %correct (full sample): {sum(correct)/len(correct)}')
