@@ -31,10 +31,10 @@
 
 import numpy as np
 
-# vector -> boolean
+# [-1, +1] -> boolean
 # determine which of two outputs is larger
 def sign(x):
-    if x[0] > x[1]:
+    if x < 0:
         return -1
     return 1
 
@@ -75,6 +75,19 @@ def read_data(data):
     return np.array(points)
 
 
+def propagate(W, y, z, k):
+    for j in range(1, k + 1):
+        # vector of dot products b/w weights and respective inputs
+        z[j] = np.matmul(W[j], y[j-1])
+        # run the above vector through the activation function
+        if j != k:
+            # add bias if not output
+            y[j] = np.concatenate((sigmoid(z[j]), [1]))
+        else:
+            # no bias if output
+            y[j] = sigmoid(z[j])
+
+
 # data
 # read training data
 xs, ys = read_data('train/data.txt'), read_data('train/labels.txt')
@@ -86,8 +99,8 @@ max_val = 1 / max(abs(xs.max()), abs(xs.min()))
 
 
 # model setup
-# 1000 inputs, 4 hidden nodes, 2 output
-layer_shape = [1000, 10, 2]
+# 1000 inputs, 10 hidden nodes, 2 output
+layer_shape = [1000, 10, 1]
 # number of layers
 k = len(layer_shape) - 1
 
@@ -115,17 +128,18 @@ delta = [np.array([])] * (k + 1)
 leanring_rate = 0.1
 batch_size = 1
 
-correct = []
 
 # training
+# xs = np.concatenate((xs, test_xs))
+# ys = np.concatenate((ys, test_ys))
 # loop over all points
-i = 0
-while i < 8 * len(xs):
-    index = np.random.randint(0, len(xs))
+correct = []
+xs = np.concatenate(([xs] * 8))
+ys = np.concatenate(([ys] * 8))
+
+for i, sample in enumerate(xs):
     # set the target label
-    sample = xs[index][:layer_shape[0]]
-    # vector of the form [1, 0] or [0, 1]
-    label = label_vector(ys[index])
+    label = ys[i]
 
     # the 0th layer's outputs is the sample
     #   also normalize by multiplying by 1/max_value
@@ -142,7 +156,7 @@ while i < 8 * len(xs):
             y[j] = np.concatenate((sigmoid(z[j]), [1]))
         else:
             # no bias if output
-            y[j] = sigmoid_o(z[j])
+            y[j] = sigmoid(z[j])
 
     # output
     # print(y[k], sign(y[k]), sign(label), label)
@@ -158,7 +172,7 @@ while i < 8 * len(xs):
         if j == k:
             # base case for delta[k]
             # take the partial derivative of error w.r.t. z[j]
-            delta[j] = (label - y[j]) * sigmoid_o_prime(z[j])
+            delta[j] = (label - y[j]) * sigmoid_prime(z[j])
         else:
             # multiply the delta vector by the transpose of the weight matrix
             # this results in a vector of dot products between deltas of above units
@@ -192,16 +206,13 @@ while i < 8 * len(xs):
 print('Training:')
 print(f'    #correct:               {sum(correct)}')
 print(f'    #trained:               {len(correct)}')
-print(f'    %correct (full sample): {sum(correct)/len(correct)}')
-amt = 2000
-print(f'    %correct (last {amt}):   {sum(correct[-amt:])/len(correct[-amt:])}')
+print(f'    %correct (full sample): {100*sum(correct)/len(correct)}%')
+amt = 1000
+print(f'    %correct (last {amt}):   {100*sum(correct[-amt:])/len(correct[-amt:])}%')
 
 correct = []
-for i in range(len(test_xs)):
-    index = i
-    sample = test_xs[index][:layer_shape[0]]
-    # vector of the form [1, 0] (-1) or [0, 1] (+1)
-    label = label_vector(test_ys[index])
+for i, sample in enumerate(test_xs):
+    label = test_ys[i]
 
     # the 0th layer's outputs is the sample
     #   also normalize by multiplying by 1/max_value
@@ -217,7 +228,7 @@ for i in range(len(test_xs)):
             y[j] = np.concatenate((sigmoid(z[j]), [1]))
         else:
             # no bias if output
-            y[j] = sigmoid_o(z[j])
+            y[j] = sigmoid(z[j])
 
     # output
     if sign(y[k]) == sign(label):
@@ -229,4 +240,4 @@ print()
 print('Testing:')
 print(f'    #correct:               {sum(correct)}')
 print(f'    #tested:                {len(correct)}')
-print(f'    %correct (full sample): {sum(correct)/len(correct)}')
+print(f'    %correct (full sample): {100*sum(correct)/len(correct)}%')
