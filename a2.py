@@ -81,9 +81,6 @@ xs, ys = read_data('train/data.txt'), read_data('train/labels.txt')
 # read testing data
 test_xs, test_ys = read_data('test/data.txt'), read_data('test/labels.txt')
 
-# maximum value of training data
-max_val = 1 / max(abs(xs.max()), abs(xs.min()))
-
 
 # model setup
 # 1000 inputs, 4 hidden nodes, 2 output
@@ -92,16 +89,16 @@ layer_shape = [1000, 10, 2]
 k = len(layer_shape) - 1
 
 # tensors for tracking matrices and vectors
-# weight, gradient matrices
+
+# weight matrix
 W = [np.array([])] * (k + 1)
-# populate each layer of calculations so they can be indexed 
+# populate each layer 
 for i in range(1, k + 1):
     # create weight matrix
-    # add room for a bias dimension in the input vector        -v
-    weights = np.random.rand(layer_shape[i], layer_shape[i - 1] + 1)
+    weights = np.random.rand(layer_shape[i], layer_shape[i - 1])
 
     # adjust weights to be centered around zero and normalized by input size
-    weights = (weights - 0.5)/(layer_shape[i])
+    weights = (weights - 0.5)
     W[i] = weights
 # initialize gradient to zero
 grad = [w * 0 for w in W]
@@ -167,7 +164,7 @@ while i < 10 * len(xs):
             #   the derivative of our sigmoid
             # we also need to drop the last row of the vector resulting from the multiplication
             #   because it corresponds to a bias and not a z value
-            delta[j] = np.matmul(W[j+1].T, delta[j+1])[:-1] * sigmoid_prime(z[j])
+            delta[j] = np.matmul(W[j+1].T, delta[j+1]) * sigmoid_prime(z[j])
 
         # creating a new matrix representing the gradient of error w.r.t. W[j]
         g = []
