@@ -97,8 +97,8 @@ W = [np.array([])] * (k + 1)
 # populate each layer of calculations so they can be indexed 
 for i in range(1, k + 1):
     # create weight matrix
-    # add room for a bias dimension in the input vector        -v
-    weights = np.random.rand(layer_shape[i], layer_shape[i - 1] + 1)
+    # add room for a bias dimension in the input vector
+    weights = np.random.rand(layer_shape[i], layer_shape[i - 1])
 
     # adjust weights to be centered around zero and normalized by input size
     weights = (weights - 0.5)/(layer_shape[i])
@@ -129,7 +129,7 @@ while i < 10 * len(xs):
 
     # the 0th layer's outputs is the sample
     #   also normalize by multiplying by 1/max_value
-    y[0] = np.concatenate((sample * max_val, [1]))
+    y[0] = sample * max_val
 
     # forward propagation
     # look at layer j=[1..k]
@@ -139,7 +139,7 @@ while i < 10 * len(xs):
         # run the above vector through the activation function
         if j != k:
             # add bias if not output
-            y[j] = np.concatenate((sigmoid(z[j]), [1]))
+            y[j] = sigmoid(z[j])
         else:
             # no bias if output
             y[j] = sigmoid_o(z[j])
@@ -167,7 +167,7 @@ while i < 10 * len(xs):
             #   the derivative of our sigmoid
             # we also need to drop the last row of the vector resulting from the multiplication
             #   because it corresponds to a bias and not a z value
-            delta[j] = np.matmul(W[j+1].T, delta[j+1])[:-1] * sigmoid_prime(z[j])
+            delta[j] = np.matmul(W[j+1].T, delta[j+1]) * sigmoid_prime(z[j])
 
         # creating a new matrix representing the gradient of error w.r.t. W[j]
         g = []
@@ -205,7 +205,7 @@ for i in range(len(test_xs)):
 
     # the 0th layer's outputs is the sample
     #   also normalize by multiplying by 1/max_value
-    y[0] = np.concatenate((sample * max_val, [1]))
+    y[0] = sample * max_val
 
     # look at layer j=[1..k]
     for j in range(1, k + 1):
@@ -214,7 +214,7 @@ for i in range(len(test_xs)):
         # run the above vector through the activation function
         if j != k:
             # add bias if not output
-            y[j] = np.concatenate((sigmoid(z[j]), [1]))
+            y[j] = sigmoid(z[j])
         else:
             # no bias if output
             y[j] = sigmoid_o(z[j])
