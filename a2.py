@@ -120,7 +120,7 @@ correct = []
 # training
 # loop over all points
 i = 0
-while i < 10 * len(xs):
+while i < 8 * len(xs):
     index = np.random.randint(0, len(xs))
     # set the target label
     sample = xs[index][:layer_shape[0]]
