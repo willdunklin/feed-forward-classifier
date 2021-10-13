@@ -143,6 +143,7 @@ xs, ys = read_data('train/data.txt'), read_data('train/labels.txt')
 # read testing data
 test_xs, test_ys = read_data('test/data.txt'), read_data('test/labels.txt')
 
+# cheat in the solution
 # xs = np.concatenate((xs, test_xs))
 # ys = np.concatenate((ys, test_ys))
 
