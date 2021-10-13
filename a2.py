@@ -27,24 +27,39 @@
 #       between the transpose of the weight matrix times the delta[j] vector times
 #       the derivative of the activation of z[i]:
 #           delta[i] = (W[j]T * delta[j]) o s'(z[i])
-#                                         ^- elem-wise mult.
+#                                         ^- elem-wise multiplication
 
 import numpy as np
 
-# real -> boolean
+# vector -> boolean
+# determine which of two outputs is larger
 def sign(x):
-    if x < 0:
+    if x[0] > x[1]:
         return -1
     return 1
 
+# change the +/-1 label to a vector representation
+def label_vector(x):
+    if x == -1:
+        return np.array([1, 0])
+    return np.array([0, 1])
+
 # tanh(z/2)
 def sigmoid(z):
-    return np.tanh(0.5*z)
+    return np.tanh(z * 0.5)
 
 # derivative of sigmoid
 def sigmoid_prime(z):
     sig_z = sigmoid(z)
     return (1 - (sig_z * sig_z))/2
+
+# sigmoid_o => [0, 1]
+def sigmoid_o(z):
+    return (sigmoid(z) + 1) * 0.5
+
+def sigmoid_o_prime(z):
+    return sigmoid_prime(z) * 0.5
+
 
 # supply data/label paths
 def read_data(data):
@@ -71,8 +86,8 @@ max_val = 1 / max(abs(xs.max()), abs(xs.min()))
 
 
 # model setup
-# 1000 inputs, 30 hidden nodes, 1 output
-layer_shape = [1000, 1]
+# 1000 inputs, 4 hidden nodes, 2 output
+layer_shape = [1000, 4, 2]
 # number of layers
 k = len(layer_shape) - 1
 
@@ -97,26 +112,23 @@ y = [np.array([])] * (k + 1)
 delta = [np.array([])] * (k + 1)
 
 # learning rate set arbitrarily for now
-leanring_rate = 3
-batch_size = 10
+leanring_rate = 0.1
+batch_size = 2
 
 correct = 0
 
 # training
 # loop over all points
 i = 0
-# for i, sample in enumerate(xs):
-while i < 1000:
-    index = np.random.randint(0, len(xs))
+while i < len(xs):
+    index = i # np.random.randint(0, len(xs))
     # set the target label
     sample = xs[index]
-    label = ys[index]
-
-    # if sign(label) == 1:
-    #     continue
+    # vector of the form [1, 0] or [0, 1]
+    label = label_vector(ys[index])
 
     # the 0th layer's outputs is the sample
-    # also normalize by multiplying by 1/max_value
+    #   also normalize by multiplying by 1/max_value
     y[0] = np.concatenate((sample * max_val, [1]))
 
     # forward propagation
@@ -130,10 +142,10 @@ while i < 1000:
             y[j] = np.concatenate((sigmoid(z[j]), [1]))
         else:
             # no bias if output
-            y[j] = sigmoid(z[j])
+            y[j] = sigmoid_o(z[j])
 
     # output
-    # print(y[k], sign(y[k]), label)
+    print(y[k], sign(y[k]), sign(label), label)
     if sign(y[k]) == sign(label):
         correct += 1
 
@@ -144,7 +156,7 @@ while i < 1000:
         if j == k:
             # base case for delta[k]
             # take the partial derivative of error w.r.t. z[j]
-            delta[j] = (label - y[j]) * sigmoid_prime(z[j])
+            delta[j] = (label - y[j]) * sigmoid_o_prime(z[j])
         else:
             # multiply the delta vector by the transpose of the weight matrix
             # this results in a vector of dot products between deltas of above units
@@ -175,4 +187,3 @@ while i < 1000:
     i += 1
 
 print(correct, correct/i)
-print(W[1].shape, xs[0].shape)
