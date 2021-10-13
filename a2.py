@@ -66,9 +66,6 @@ xs, ys = read_data('train/data.txt'), read_data('train/labels.txt')
 # read testing data
 test_xs, test_ys = read_data('test/data.txt'), read_data('test/labels.txt')
 
-# maximum value of training data
-max_val = 1 / max(abs(xs.max()), abs(xs.min()))
-
 
 # model setup
 # 1000 inputs, 30 hidden nodes, 1 output
@@ -77,16 +74,16 @@ layer_shape = [1000, 1]
 k = len(layer_shape) - 1
 
 # tensors for tracking matrices and vectors
-# weight, gradient matrices
+
+# weight matrix
 W = [np.array([])] * (k + 1)
-# populate each layer of calculations so they can be indexed 
+# populate each layer 
 for i in range(1, k + 1):
     # create weight matrix
-    # add room for a bias dimension in the input vector        -v
-    weights = np.random.rand(layer_shape[i], layer_shape[i - 1] + 1)
+    weights = np.random.rand(layer_shape[i], layer_shape[i - 1])
 
     # adjust weights to be centered around zero and normalized by input size
-    weights = (weights - 0.5)/(layer_shape[i])
+    weights = (weights - 0.5)
     W[i] = weights
 # initialize gradient to zero
 grad = [w * 0 for w in W]
@@ -97,8 +94,8 @@ y = [np.array([])] * (k + 1)
 delta = [np.array([])] * (k + 1)
 
 # learning rate set arbitrarily for now
-leanring_rate = 3
-batch_size = 10
+leanring_rate = 1
+batch_size = 1
 
 correct = 0
 
@@ -106,8 +103,8 @@ correct = 0
 # loop over all points
 i = 0
 # for i, sample in enumerate(xs):
-while i < 1000:
-    index = np.random.randint(0, len(xs))
+while i < len(xs):
+    index = i
     # set the target label
     sample = xs[index]
     label = ys[index]
@@ -117,7 +114,7 @@ while i < 1000:
 
     # the 0th layer's outputs is the sample
     # also normalize by multiplying by 1/max_value
-    y[0] = np.concatenate((sample * max_val, [1]))
+    y[0] = sample
 
     # forward propagation
     # look at layer j=[1..k]
@@ -125,12 +122,7 @@ while i < 1000:
         # vector of dot products b/w weights and respective inputs
         z[j] = np.matmul(W[j], y[j-1])
         # run the above vector through the activation function
-        if j != k:
-            # add bias if not output
-            y[j] = np.concatenate((sigmoid(z[j]), [1]))
-        else:
-            # no bias if output
-            y[j] = sigmoid(z[j])
+        y[j] = sigmoid(z[j])
 
     # output
     # print(y[k], sign(y[k]), label)
@@ -153,7 +145,7 @@ while i < 1000:
             #   the derivative of our sigmoid
             # we also need to drop the last row of the vector resulting from the multiplication
             #   because it corresponds to a bias and not a z value
-            delta[j] = np.matmul(W[j+1].T, delta[j+1])[:-1] * sigmoid_prime(z[j])
+            delta[j] = np.matmul(W[j+1].T, delta[j+1]) * sigmoid_prime(z[j])
 
         # creating a new matrix representing the gradient of error w.r.t. W[j]
         g = []
@@ -175,4 +167,3 @@ while i < 1000:
     i += 1
 
 print(correct, correct/i)
-print(W[1].shape, xs[0].shape)
