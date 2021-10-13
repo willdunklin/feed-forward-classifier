@@ -102,7 +102,7 @@ def propagate(W, y, z, k):
             y[j] = sigmoid(z[j])
 
 # backpropagation
-def backprop(W, y, z, delta, grad, learning_rate, layers, batch_size=1):
+def backprop(W, y, z, delta, grad, layers, learning_rate=0.1, batch_size=1):
     # go backwards j=[k-1..1]
     for j in range(len(layers) - 1, 0, -1):
         # delta_j = partial(error)/partial(z_j)
@@ -154,7 +154,6 @@ max_val = 1 / max(abs(xs.max()), abs(xs.min()))
 # layer shape: 1000 inputs, 10 hidden nodes, 2 output
 layers = [1000, 10, 1]
 W, z, y, delta, grad = create_tensors(layers)
-learning_rate = 0.1
 
 
 ## training
@@ -169,6 +168,7 @@ for i, sample in enumerate(xs):
     label = ys[i]
 
     # the 0th layer's outputs is the sample
+    #   normalize by 1/max_value of data
     y[0] = np.concatenate((sample * max_val, [1]))
 
     propagate(W, y, z, len(layers))
@@ -181,7 +181,7 @@ for i, sample in enumerate(xs):
         correct.append(0)
 
     # backpropagation
-    backprop(W, y, z, delta, grad, learning_rate, layers, batch_size=1)
+    backprop(W, y, z, delta, grad, layers, learning_rate=0.1, batch_size=10)
 
 print('Training:')
 print(f'    #correct:               {sum(correct)}')
