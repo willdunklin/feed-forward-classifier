@@ -69,7 +69,7 @@ def create_tensors(layers):
     # populate each layer of calculations so they can be indexed 
     for i in range(1, len(layers)):
         # create weight matrix
-        # add room for a bias dimension in the input vector        -v
+        # add room for a bias dimension in the input vector
         weights = np.random.rand(layers[i], layers[i - 1] + 1)
 
         # adjust weights to be centered around zero and normalized by input size
